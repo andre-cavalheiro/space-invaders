@@ -81,7 +81,6 @@ class aliens:
             for j in range(4):
                     g.matrix[x][y]=0
                     y += 2
-        print("Apagado")
         #Alterar coordenadas
         if self.direction > 0:
             if self.pos[1] == 3:
@@ -96,7 +95,6 @@ class aliens:
             else:
                 self.pos[1] -=1
         #Escrever os Novos
-        print("Vms desenhar")
         x=self.pos[0]-2
         for i in range(5):
             x+=2
@@ -105,7 +103,6 @@ class aliens:
                     if self.lives[i][j] == 1:
                         g.matrix[x][y]=2
                     y += 2
-        print("Desenhado")
         #Continuar a andar
         t = Timer(1,self.move,[g])
         t.start()
