@@ -63,12 +63,16 @@ class spaceship:
 
 
 
+
+
+
 class aliens:
     def __init__(self):
         self.lives = [[1 for x in range(4)] for y in range(5)]
         self.pos = [0,0]
         self.direction = 1  #Quando positivo anda da esquerda para a direita
-        self.fire_speed = 1
+        self.fire_speed = 1/12
+        self.fire_intreval = 1
 
     def move(self, g):
         #Apagar Anteriores
@@ -105,37 +109,42 @@ class aliens:
         t = Timer(1,self.move,[g])
         t.start()
 
-        def alien_shoot(self,g):
-            #Defenir o alien que vai disparar
-            x = 4
-            y = randint(0,3)
-            while g.enemy.lives[x][y] == 0:
-                x -= 1
+    def alien_shoot(self,g):
+        #Defenir o alien que vai disparar
+        x = 4
+        y = randint(0,3)
+        while g.enemy.lives[x][y] == 0:
+            x -= 1
 
-            #Encontrar a posição da qual vai partir o tiro
-            lin=g.enemy.pos[0]+2*x
-            col=g.enemy.pos[1]+2*y
-            
-            #Disparar
-            self.fire()
-
-        def fire(self,g,row, col,bool):
-            #Apagar tiro anterior caso este nao seja o primeiro
-            if bool != 1:
-                g.matrix[row][col]=BLACK      
-            #Desenhar o novo tiro
-            g.matrix[row+1][col]=GREEN
-            #Se chegarmos ao fim da matriz, o tiro desapareces
-            if row+1 == 19:
-                g.matrix[row+1][col]=BLACK
-                return
-            #Propagar o tiro:
-            t = Timer(1/12, self.fire, [g, row+1, col, 0])
-            t.start()
-
-            
-            
+        #Encontrar a posição da qual vai partir o tiro
+        lin=g.enemy.pos[0]+2*x
+        col=g.enemy.pos[1]+2*y
         
+        #Disparar
+        self.fire(g,lin,col,1)
+
+    def fire(self,g,row, col,bool):
+        #Apagar tiro anterior caso este nao seja o primeiro
+        if bool != 1:
+            g.matrix[row][col]=BLACK 
+        #Se chocar contra a nave, terminar o jogo
+        if g.matrix[row+1][col]==BLUE:
+            g.state = -1     
+        #Desenhar o novo tiro
+        g.matrix[row+1][col]=GREEN
+        #Se chegarmos ao fim da matriz, o tiro desapareces
+        if row+1 == 19:
+            g.matrix[row+1][col]=BLACK
+            t = Timer(self.fire_intreval, self.alien_shoot, [g])
+            t.start()
+            return
+        #Propagar o tiro:
+        t = Timer(self.fire_speed, self.fire, [g, row+1, col, 0])
+        t.start()
+
+        
+        
+    
 
 
 
@@ -148,13 +157,13 @@ class Space_invaders:
         self.input_queue = input_queue
         self.ship = spaceship()
         self.enemy = aliens()
+        self.state = 0      #0->Durante o jogo    1->Venceu   -1->Perdeu
         #Iniciar matriz que simula a matriz de leds
-        #self.matrix = [[0 for x in range(10)] for y in range(20)]
         self.matrix = [[BLACK]*WIDTH for x in range(HEIGHT)]
         #Desenhar a nave espacial na sua posição inicial
         for n in self.ship.col:
             self.matrix[self.ship.row][n]=BLUE
-        #Desenhar aliens na sua posição inicial
+        #Desenhar aliens na sua posição inicial e iniciar o seu movimento e disparo
         y=-2
         for i in range(5):
             y+=2
@@ -163,8 +172,10 @@ class Space_invaders:
                     self.matrix[x][y]=RED
                     x +=2
         self.enemy.move(self)
+        p = Timer(3, self.enemy.alien_shoot, [self])
+        p.start()
         #-------------------------EXPERIENCIAS--------------------------------------
-        
+        """
         t = Timer(3, self.ship.fire, [self, self.ship.row, self.ship.col[1]])
         t1 = Timer(4, self.ship.fire, [self, self.ship.row, self.ship.col[1]])
         t2 = Timer(5, self.ship.fire, [self, self.ship.row, self.ship.col[1]])
@@ -188,6 +199,11 @@ class Space_invaders:
         t8.start()
         t9.start()
         t10.start()
+        """
+        
+        
+
+        
         #---------------------------------------------------------------------------
         self.loop()
 
@@ -196,9 +212,9 @@ class Space_invaders:
             for j in range(4):
                 if self.enemy.lives[i][j] != 0:
                     #Se existir algum inimigo vivo não acaba
-                    return 0
+                    return 
         #Caso contrário o jogo acaba
-        return 1
+        self.state = 1
     
     def check_lost(self):
         bool=0
@@ -215,8 +231,8 @@ class Space_invaders:
          
         #Verificar se o inimigo mais baixo já atingiu a naveingiu a nave   
         if self.enemy.pos[0] + 8 - dif == 19:
-            return 1
-        return 0
+            self.state = -1
+        return 
         
     def update_screen(self):
         screen = b''
@@ -239,12 +255,10 @@ class Space_invaders:
 
     def loop(self):
         while True:
+            self.check_win()
+            self.check_lost()
 
-            if self.check_lost() == 1:
-                self.clear_screen()
-                break
-            
-            if self.check_win() == 1:
+            if self.state != 0:
                 self.clear_screen()
                 break
 
